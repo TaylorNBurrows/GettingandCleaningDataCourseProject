@@ -1,7 +1,6 @@
 ## Set working directory
 setwd("./Users/tmoniz/datasciencecoursera/GettingandCleaningData/Course Project/UCI Har Dataset")
 
-library(dplyr)
 
 ##Checking for and creating directory titled:wearable_data
 if (!file.exists("UCI Har Dataset")) {
