@@ -1,95 +1,61 @@
-## Set working directory
-setwd("./Users/tmoniz/datasciencecoursera/GettingandCleaningData/Course Project/UCI Har Dataset")
+library(plyr)
+setwd("~/datasciencecoursera/2GettingandCleaningData/Course Project")
 
-
-##Checking for and creating directory titled:wearable_data
-if (!file.exists("UCI Har Dataset")) {
-  dir.create("UCI Har Dataset")
+##Access data and download file
+if(!file.exists("./Project_Dataset")) {
+  dir.create("./Project_Dataset")
 }
 fileUrl<-"https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-download.file(fileUrl,destfile="./UCI Har Dataset/wearable_data.csv", 
-              method="curl")
-list.files("./UCI Har Dataset")
+download.file(fileUrl,destfile = "./Project_Dataset/dataset.zip", method="curl")
+##Unzip File
+unzip(zipfile = "./Project_Dataset/dataset.zip", exdir="./Project_Dataset")
+list.files("./Project_Dataset")
 
-## Read Data -- General
-features<-read.table('./features.txt',header=FALSE)
-activity_labels<-read.table('./activity_labels.txt',header=FALSE)
+##Read Data from all data sets 
+##Train Data
+x_train <- read.table("./Project_Dataset/UCI Har Dataset/train/X_train.txt")
+y_train <- read.table("./Project_Dataset/UCI Har Dataset/train/y_train.txt")
+subject_train <- read.table("./Project_Dataset/UCI Har Dataset/train/subject_train.txt")
+##Test Data
+x_test <- read.table("./Project_Dataset/UCI Har Dataset/test/X_test.txt")
+y_test <- read.table("./Project_Dataset/UCI Har Dataset/test/y_test.txt")
+subject_test <- read.table("./Project_Dataset/UCI Har Dataset/test/subject_test.txt")
 
-## Give column names
-colnames(activity_labels)=c("activityID","typeActivity")
+##Read data from supporting files
+features <- read.table('./Project_Dataset/UCI HAR Dataset/features.txt')
+activityLabels = read.table('./Project_Dataset/UCI HAR Dataset/activity_labels.txt')
 
-##Read Data -- Train
-subject_train<-read.table('./train/subject_train.txt',header=FALSE)
-y_train<-read.table('./train/y_train.txt',header=FALSE)
-x_train<-read.table('./train/x_train.txt',header=FALSE)
+##give column names
+colnames(x_train) <- features[,2]
+colnames(y_train) <- "activityID"
+colnames(subject_train) <- "SubjectID"
+colnames(x_test) <- features[,2]
+colnames(y_test) <- "activityID"
+colnames(subject_test) <- "SubjectID"
+colnames(activityLabels) <-c('activityID','activityType')
 
-## Give column names
-colnames(subject_train) = "SubjectID"
-colnames(y_train) = "activityID"
-colnames(x_train) = "features[,2]"
-
-##merge all "training" files to create one data set called Data_train
-Data_train<-cbind(subject_train,y_train,x_train)
-
-## Repeat previous steps for the Test Data Files
-## Read Data -- Test
-subject_test<-read.table('./test/subject_test.txt',header=FALSE)
-y_test<-read.table('./test/y_test/txt',header=FALSE)
-x_test<-read.table('./test/x_test/txt',header=FALSE)
-
-## Give column names
-colnames(subject_test) = "SubjectID"
-colnames(y_test) = "activityID"
-colnames(x_test) = features[,2]
-
-##merge all "test" files to create one data set called Data_test
-Data_test<-cbind(subject_test,y_test,x_test)
-
-##then merge the two "Data_train" and "Data_test" files to create a merged file
-merged_file<-rbind(Data_train,Data_test)
-
-## Give column names to merged_file
-colNames=colnames(merged_file)
-
-##Get measurements on mean and std. dev of the original measurements
-logicalVector = (grepl("activity..",colNames) | grepl("subject..",colNames) | 
-                grepl("-mean..",colNames) & !grepl("-meanFreq..",colNames) & !grepl("mean..-",colNames) | 
-                grepl("-std..",colNames) & !grepl("-std()..-",colNames))
-
-merged_file <- merged_file[logicalVector==TRUE]
-
-## add column names from Activity data set
-merged_file <- merge(merged_file,activity_labels,by='activityID', all.x=TRUE)
-colNames = colnames(merged_file)
-
-for (i in 1:length(colNames)) 
-{
-  colNames[i] = gsub("\\()","",colNames[i])
-  colNames[i] = gsub("-std$","StdDev",colNames[i])
-  colNames[i] = gsub("-mean","Mean",colNames[i])
-  colNames[i] = gsub("^(t)","time",colNames[i])
-  colNames[i] = gsub("^(f)","freq",colNames[i])
-  colNames[i] = gsub("([Gg]ravity)","Gravity",colNames[i])
-  colNames[i] = gsub("([Bb]ody[Bb]ody|[Bb]ody)","Body",colNames[i])
-  colNames[i] = gsub("[Gg]yro","Gyro",colNames[i])
-  colNames[i] = gsub("AccMag","AccMagnitude",colNames[i])
-  colNames[i] = gsub("([Bb]odyaccjerkmag)","BodyAccJerkMagnitude",colNames[i])
-  colNames[i] = gsub("JerkMag","JerkMagnitude",colNames[i])
-  colNames[i] = gsub("GyroMag","GyroMagnitude",colNames[i])
-}
-
-colnames(merged_file) = colNames
-
-##Create a new tidy data set using past steps
-final_data <- merged_file[,names(merged_file) != 'activity_labels']
-
-final_tidy <- aggregate(final_data[,names(final_data) != c('activityID','subjectID')],by=list(activityID=final_data$activityID,subjectID = final_data$subjectID),mean)
-
-final_tidy <- merge(tidyData,activity_labels,by='activityID',all.x=TRUE)
-
-##Export Tidy Data
-write.table(final_tidy,'./final_tidy.txt',row.names=TRUE,sep='\t')
+##Combine all data into one set
+##train merge and test merge
+Data_train<-cbind (y_train,subject_train,x_train)
+Data_test<-cbind (y_test,subject_test,x_test)
+##Merge both together
+Merge_Data <- rbind(Data_train,Data_test)
+## Set Column names for merged file
+colNames <- colnames(Merge_Data)
 
 
+##Get measurements on mean and std. dev of original measurements
+mean_std <- (grepl("activityID", colNames) | 
+                    grepl("SubjectID", colNames) | 
+                    grepl("mean..", colNames) | 
+                    grepl("std..", colNames)
+            )
+subset_mean <- Merge_Data[ , mean_std == TRUE]
+give_names <- merge(subset_mean, activityLabels, by='activityID', all.x=TRUE)
+
+##Final step, combine into tidy data set
+tidy_data <- aggregate(. ~SubjectID + activityID, give_names, mean)
+tidy_data <- tidy_data[order(tidy_data$SubjectID, tidy_data$activityID), ]
+write.table(tidy_data,"tidy_data.txt", row.name=FALSE)
 
 
